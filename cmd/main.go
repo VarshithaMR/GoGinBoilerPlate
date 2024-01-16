@@ -1,10 +1,14 @@
 package main
 
 import (
+	"GoGinBoilerPlate/server"
+	"GoGinBoilerPlate/server/props"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 	"log"
+	"os"
 )
 
 var (
@@ -17,6 +21,11 @@ func main() {
 	fmt.Println("Hello, World!")
 	// read all the properties from os.environ or .env
 	properties = initConfiguration("./env")
+
+	//set up server
+	serverProperties, err := readServerConfig()
+	srv := server.NewServer(serverProperties) //&sc
+	defer srv.Shutdown()
 }
 
 func initConfiguration(path string) *viper.Viper {
@@ -49,4 +58,21 @@ func initConfiguration(path string) *viper.Viper {
 	//log.Infof("loading application config from %v", viperConfigManager.ConfigFileUsed())
 	log.Printf("loading application config from %v", viperConfigManager.ConfigFileUsed())
 	return viperConfigManager
+}
+
+func readServerConfig() (*props.Properties, error) {
+
+	yamlFile, err := os.ReadFile("./env/application.yaml")
+
+	if err != nil {
+		log.Printf("yamlFile.Get err   #%v ", err)
+	}
+
+	var data props.Properties
+	err = yaml.Unmarshal(yamlFile, &data)
+	if err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
+
+	return &data, err
 }
