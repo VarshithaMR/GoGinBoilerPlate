@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
@@ -19,13 +20,29 @@ const envVarDDService = "DD_SERVICE"
 
 func main() {
 	fmt.Println("Hello, World!")
+	LOG, _ := zap.NewProduction()
+
 	// read all the properties from os.environ or .env
 	properties = initConfiguration("./env")
 
 	//set up server
 	serverProperties, err := readServerConfig()
+	if err != nil {
+		LOG.Info("Error in reading conf file:")
+	}
+
+	//providers := getPoviders()
+	goGinDomain := NewGoGinDomain() // any providers will go here
+
 	srv := server.NewServer(serverProperties) //&sc
 	defer srv.Shutdown()
+
+	//Configure Server
+	srv.ConfigureAPI(goGinDomain)
+
+	if err := srv.Serve(); err != nil {
+		srv.Fatalf("Error in running server: %v", err)
+	}
 }
 
 func initConfiguration(path string) *viper.Viper {
@@ -76,3 +93,12 @@ func readServerConfig() (*props.Properties, error) {
 
 	return &data, err
 }
+
+/*func getProviders(properties *viper.Viper) Providers {
+	p1 := getProvider1()
+	p2 := getProvider2()
+	return Providers(
+		P1 : p1,
+		P2 : p2
+		)
+}*/
